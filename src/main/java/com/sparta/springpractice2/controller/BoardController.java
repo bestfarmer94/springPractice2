@@ -4,9 +4,13 @@ import com.sparta.springpractice2.dto.BoardRequestDto;
 import com.sparta.springpractice2.dto.BoardResponseDto;
 import com.sparta.springpractice2.service.BoardService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -22,7 +26,33 @@ public class BoardController {
     }
 
     @PostMapping("/board")
-    public String writeBoard(@RequestBody BoardRequestDto boardRequestDto, HttpServletRequest httpServletRequest){
-        return boardService.writeBoard(boardRequestDto, httpServletRequest);
+    public ResponseEntity writeBoard(
+            @Valid @RequestBody BoardRequestDto boardRequestDto,
+            BindingResult bindingResult,
+            HttpServletRequest httpServletRequest) {
+
+        if (bindingResult.hasErrors()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(bindingResult.getAllErrors());
+        }
+        return ResponseEntity.ok(boardService.writeBoard(boardRequestDto, httpServletRequest));
+    }
+
+    @GetMapping("/board/{id}")
+    public BoardResponseDto selectBoard(@PathVariable Long boardId) {
+        return boardService.selectBoard(boardId);
+    }
+
+    @PutMapping("/board/{id}")
+    public BoardResponseDto updateBoard(
+            @PathVariable Long boardId,
+            @RequestBody BoardRequestDto boardRequestDto,
+            HttpServletRequest httpServletRequest) {
+
+        return boardService.updateBoard(boardId, boardRequestDto, httpServletRequest);
+    }
+
+    @DeleteMapping("/board/{id}")
+    public String deleteBoard(@PathVariable Long boardId, HttpServletRequest httpServletRequest) {
+        return boardService.deleteBoard(boardId, httpServletRequest);
     }
 }

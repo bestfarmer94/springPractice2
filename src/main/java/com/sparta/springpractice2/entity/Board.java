@@ -16,25 +16,27 @@ public class Board extends Timestamped{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String title;
-    private String username;
+
+    @ManyToOne
+    @JoinColumn(name = "USER_ID", nullable = false)
+    private Member member;
     private String content;
 
     @OneToMany
     private List<Comment> commentList = new ArrayList<>();
 
-    public Board(BoardRequestDto boardRequestDto, String username){
+    public Board(BoardRequestDto boardRequestDto, Member member){
         this.title = boardRequestDto.getTitle();
         this.content = boardRequestDto.getContent();
-        this.username = username;
+        this.member = member;
     }
 
     public void addComment(Comment comment){
-        System.out.println("addComment");
-
         commentList.add(comment);
-        if(commentList.size() != 0){
-            System.out.println(commentList.size());
-            System.out.println(commentList.get(commentList.size()-1).getContent());
-        }
+    }
+
+    public void update(BoardRequestDto boardRequestDto) {
+        this.title = boardRequestDto.getTitle();
+        this.content = boardRequestDto.getContent();
     }
 }

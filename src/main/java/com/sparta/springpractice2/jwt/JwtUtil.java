@@ -1,5 +1,6 @@
 package com.sparta.springpractice2.jwt;
 
+import com.sparta.springpractice2.entity.MemberEnum;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SecurityException;
@@ -46,13 +47,13 @@ public class JwtUtil {
     }
 
     // 토큰 생성
-    public String createToken(String username) {
+    public String createToken(String username, MemberEnum role) {
         Date date = new Date();
 
         return BEARER_PREFIX +
                 Jwts.builder()
                         .setSubject(username)
-                        .claim(AUTHORIZATION_KEY, "member")
+                        .claim(AUTHORIZATION_KEY, role)
                         .setExpiration(new Date(date.getTime() + TOKEN_TIME))
                         .setIssuedAt(date)
                         .signWith(key, signatureAlgorithm)
@@ -79,5 +80,15 @@ public class JwtUtil {
     // 토큰에서 사용자 정보 가져오기
     public Claims getUserInfoFromToken(String token) {
         return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
+    }
+
+    public Claims validToken(HttpServletRequest request) {
+        String token = resolveToken(request);
+
+        if(token == null || !validateToken(token)) {
+            throw new IllegalArgumentException("Token Error");
+        }
+
+        return getUserInfoFromToken(token);
     }
 }

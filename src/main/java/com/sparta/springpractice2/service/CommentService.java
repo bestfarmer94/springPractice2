@@ -4,9 +4,11 @@ import com.sparta.springpractice2.dto.CommentRequestDto;
 import com.sparta.springpractice2.dto.CommentResponseDto;
 import com.sparta.springpractice2.entity.Board;
 import com.sparta.springpractice2.entity.Comment;
+import com.sparta.springpractice2.entity.Member;
 import com.sparta.springpractice2.jwt.JwtUtil;
 import com.sparta.springpractice2.repository.BoardRepository;
 import com.sparta.springpractice2.repository.CommentRepository;
+import com.sparta.springpractice2.repository.MemberRepository;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,30 +22,62 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final JwtUtil jwtUtil;
     private final BoardRepository boardRepository;
+    private final MemberRepository memberRepository;
 
     @Transactional
-    public String writeComment(Long boardId, CommentRequestDto commentRequestDto, HttpServletRequest request) {
+    public CommentResponseDto writeComment(Long boardId, CommentRequestDto commentRequestDto, HttpServletRequest request) {
+        Claims claims = jwtUtil.validToken(request);
 
-        String token = jwtUtil.resolveToken(request);
-        Claims claims;
+        Board board = boardRepository.findById(boardId).orElseThrow(
+                () -> new IllegalArgumentException("해당 게시물이 존재하지 않습니다.")
+        );
 
-        if(token != null){
-            if(jwtUtil.validateToken(token)){
-                claims = jwtUtil.getUserInfoFromToken(token);
-            }else{
-                throw new IllegalArgumentException("Token Error");
-            }
+        Member member = memberRepository.findByUsername(claims.getSubject()).orElseThrow(
+                () -> new IllegalArgumentException("해당 아이디가 존재하지 않습니다.")
+        );
 
-            Board board = boardRepository.findById(boardId).orElseThrow(
-                    () -> new IllegalArgumentException("해당 게시물이 존재하지 않습니다.")
-            );
-            commentRepository.saveAndFlush(new Comment(board, commentRequestDto, claims.getSubject()));
-            Comment comment = commentRepository.findByBoardAndContentAndUsername(board, commentRequestDto.getContent(), claims.getSubject());
-            System.out.println(comment.getUsername());
-            System.out.println("title :" + comment.getBoard().getTitle());
-            board.addComment(comment);
-            return "저장 성공";
+        Comment comment = commentRepository.save(new Comment(board, commentRequestDto, member));
+        board.addComment(comment);
+        return new CommentResponseDto(comment);
+    }
+
+    @Transactional
+    public CommentResponseDto updateComment(Long commentId, CommentRequestDto commentRequestDto, HttpServletRequest request) {
+        Claims claims = jwtUtil.validToken(request);
+        Member member = memberRepository.findByUsername(claims.getSubject()).orElseThrow(
+                () -> new IllegalArgumentException("해당 아이디가 존재하지 않습니다.")
+        );
+        Comment comment = getComment(commentId);
+        confirm(member, comment);
+
+        comment.update(commentRequestDto);
+        return new CommentResponseDto(comment);
+    }
+
+    @Transactional
+    public String deleteComment(Long commentId, HttpServletRequest request) {
+        Claims claims = jwtUtil.validToken(request);
+        Member member = memberRepository.findByUsername(claims.getSubject()).orElseThrow(
+                () -> new IllegalArgumentException("해당 아이디가 존재하지 않습니다.")
+        );
+        Comment comment = getComment(commentId);
+        confirm(member, comment);
+
+        commentRepository.delete(comment);
+        return "삭제 완료.";
+    }
+
+    private void confirm(Member member, Comment comment) {
+        if(member.getRole().equals("ADMIN") || member == comment.getMember()){
+            return;
         }
-        return "저장 실패";
+        throw new IllegalArgumentException("삭제 권한이 없습니다.");
+    }
+
+    private Comment getComment(Long commentId) {
+        Comment comment = commentRepository.findById(commentId).orElseThrow(
+                () -> new IllegalArgumentException("해당 댓글이 존재하지 않습니다.")
+        );
+        return comment;
     }
 }
