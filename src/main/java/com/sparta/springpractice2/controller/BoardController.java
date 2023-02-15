@@ -37,12 +37,12 @@ public class BoardController {
         return ResponseEntity.ok(boardService.writeBoard(boardRequestDto, httpServletRequest));
     }
 
-    @GetMapping("/board/{id}")
+    @GetMapping("/board/{boardId}")
     public BoardResponseDto selectBoard(@PathVariable Long boardId) {
         return boardService.selectBoard(boardId);
     }
 
-    @PutMapping("/board/{id}")
+    @PutMapping("/board/{boardId}")
     public BoardResponseDto updateBoard(
             @PathVariable Long boardId,
             @RequestBody BoardRequestDto boardRequestDto,
@@ -51,7 +51,7 @@ public class BoardController {
         return boardService.updateBoard(boardId, boardRequestDto, httpServletRequest);
     }
 
-    @DeleteMapping("/board/{id}")
+    @DeleteMapping("/board/{boardId}")
     public String deleteBoard(@PathVariable Long boardId, HttpServletRequest httpServletRequest) {
         return boardService.deleteBoard(boardId, httpServletRequest);
     }

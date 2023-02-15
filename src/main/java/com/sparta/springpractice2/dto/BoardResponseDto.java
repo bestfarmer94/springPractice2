@@ -11,7 +11,7 @@ import java.util.List;
 
 @Getter
 public class BoardResponseDto {
-    private Long id;
+    private Long boardId;
     private String title;
     private String username;
     private String content;
@@ -19,7 +19,7 @@ public class BoardResponseDto {
     private List<CommentResponseDto> commentList;
 
     public BoardResponseDto(Board board) {
-        this.id = board.getId();
+        this.boardId = board.getBoardId();
         this.title = board.getTitle();
         this.username = board.getMember().getUsername();
         this.content = board.getContent();

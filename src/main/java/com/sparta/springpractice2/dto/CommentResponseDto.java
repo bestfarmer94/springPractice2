@@ -7,13 +7,13 @@ import java.time.LocalDateTime;
 
 @Getter
 public class CommentResponseDto implements Comparable<CommentResponseDto>{
-    private Long id;
+    private Long commentId;
     private String username;
     private String content;
     private LocalDateTime createdAt;
 
     public CommentResponseDto(Comment comment){
-        this.id = comment.getId();
+        this.commentId = comment.getCommentId();
         this.username = comment.getMember().getUsername();
         this.content = comment.getContent();
         this.createdAt = comment.getCreatedAt();

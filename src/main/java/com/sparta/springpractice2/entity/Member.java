@@ -22,5 +22,6 @@ public class Member {
     public Member(MemberRequestDto memberRequestDto){
         this.username = memberRequestDto.getUsername();
         this.password = memberRequestDto.getPassword();
+        this.role = memberRequestDto.getRole();
     }
 }

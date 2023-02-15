@@ -4,9 +4,9 @@ import com.sparta.springpractice2.dto.BoardRequestDto;
 import com.sparta.springpractice2.dto.BoardResponseDto;
 import com.sparta.springpractice2.entity.Board;
 import com.sparta.springpractice2.entity.Member;
+import com.sparta.springpractice2.entity.MemberEnum;
 import com.sparta.springpractice2.jwt.JwtUtil;
 import com.sparta.springpractice2.repository.BoardRepository;
-import com.sparta.springpractice2.repository.MemberRepository;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,7 +21,7 @@ import java.util.List;
 public class BoardService {
     private final BoardRepository boardRepository;
     private final JwtUtil jwtUtil;
-    private final MemberRepository memberRepository;
+    private final MemberService memberService;
 
     @Transactional(readOnly = true)
     public List<BoardResponseDto> listAll() {
@@ -37,7 +37,7 @@ public class BoardService {
     @Transactional
     public BoardResponseDto writeBoard(BoardRequestDto boardRequestDto, HttpServletRequest request) {
         Claims claims = jwtUtil.validToken(request);
-        Member member = getMember(claims);
+        Member member = memberService.getMember(claims);
 
         Board board = boardRepository.save(new Board(boardRequestDto, member));
         return new BoardResponseDto(board);
@@ -52,7 +52,7 @@ public class BoardService {
     @Transactional
     public BoardResponseDto updateBoard(Long boardId, BoardRequestDto boardRequestDto, HttpServletRequest request) {
         Claims claims = jwtUtil.validToken(request);
-        Member member = getMember(claims);
+        Member member = memberService.getMember(claims);
         Board board = getBoard(boardId);
         confirmId(member, board);
 
@@ -63,7 +63,7 @@ public class BoardService {
     @Transactional
     public String deleteBoard(Long boardId, HttpServletRequest request) {
         Claims claims = jwtUtil.validToken(request);
-        Member member = getMember(claims);
+        Member member = memberService.getMember(claims);
         Board board = getBoard(boardId);
         confirmId(member, board);
 
@@ -71,22 +71,15 @@ public class BoardService {
         return "삭제 성공";
     }
 
-    private Board getBoard(Long id) {
-        Board board = boardRepository.findById(id).orElseThrow(
+    public Board getBoard(Long id) {
+        Board board = boardRepository.findByBoardId(id).orElseThrow(
                 () -> new IllegalArgumentException("없는 게시글 입니다.")
         );
         return board;
     }
 
-    private Member getMember(Claims claims) {
-        Member member = memberRepository.findByUsername(claims.getSubject()).orElseThrow(
-                () -> new IllegalArgumentException("없는 회원입니다.")
-        );
-        return member;
-    }
-
     public void confirmId(Member member, Board board) {
-        if (member.getRole().equals("ADMIN") || member.getUsername().equals(board.getMember().getUsername())) {
+        if (member.getRole() == MemberEnum.ADMIN || member.getUsername().equals(board.getMember().getUsername())) {
             return;
         }
         throw new IllegalArgumentException("해당 게시글은 회원님의 게시글이 아닙니다.");

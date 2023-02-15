@@ -14,7 +14,7 @@ import java.util.List;
 public class Board extends Timestamped{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long boardId;
     private String title;
 
     @ManyToOne
@@ -22,7 +22,7 @@ public class Board extends Timestamped{
     private Member member;
     private String content;
 
-    @OneToMany
+    @OneToMany(mappedBy = "board", cascade = CascadeType.REMOVE)
     private List<Comment> commentList = new ArrayList<>();
 
     public Board(BoardRequestDto boardRequestDto, Member member){

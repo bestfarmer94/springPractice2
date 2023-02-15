@@ -4,6 +4,7 @@ import com.sparta.springpractice2.dto.MemberRequestDto;
 import com.sparta.springpractice2.entity.Member;
 import com.sparta.springpractice2.jwt.JwtUtil;
 import com.sparta.springpractice2.repository.MemberRepository;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,5 +40,12 @@ public class MemberService {
 
         response.addHeader(JwtUtil.AUTHORIZATION_HEADER, jwtUtil.createToken(member.getUsername(), member.getRole()));
         return "로그인 성공.";
+    }
+
+    public Member getMember(Claims claims) {
+        Member member = memberRepository.findByUsername(claims.getSubject()).orElseThrow(
+                () -> new IllegalArgumentException("없는 회원입니다.")
+        );
+        return member;
     }
 }
