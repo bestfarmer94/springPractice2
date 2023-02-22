@@ -11,12 +11,14 @@ public class CommentResponseDto implements Comparable<CommentResponseDto>{
     private String username;
     private String content;
     private LocalDateTime createdAt;
+    private int likes;
 
     public CommentResponseDto(Comment comment){
         this.commentId = comment.getCommentId();
         this.username = comment.getMember().getUsername();
         this.content = comment.getContent();
         this.createdAt = comment.getCreatedAt();
+        this.likes = comment.getCommentLikeList().size();
     }
 
     @Override

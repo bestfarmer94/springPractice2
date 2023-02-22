@@ -17,6 +17,8 @@ public class BoardResponseDto {
     private String content;
     private LocalDateTime createdAt;
     private List<CommentResponseDto> commentList;
+    private int likes;
+
 
     public BoardResponseDto(Board board) {
         this.boardId = board.getBoardId();
@@ -31,5 +33,6 @@ public class BoardResponseDto {
         }
         Collections.sort(list);
         this.commentList = list;
+        this.likes = board.getLikes();
     }
 }

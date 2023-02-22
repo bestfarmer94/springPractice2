@@ -2,32 +2,28 @@ package com.sparta.springpractice2.service;
 
 import com.sparta.springpractice2.dto.CommentRequestDto;
 import com.sparta.springpractice2.dto.CommentResponseDto;
-import com.sparta.springpractice2.entity.Board;
-import com.sparta.springpractice2.entity.Comment;
-import com.sparta.springpractice2.entity.Member;
-import com.sparta.springpractice2.entity.MemberEnum;
-import com.sparta.springpractice2.jwt.JwtUtil;
+import com.sparta.springpractice2.entity.*;
+import com.sparta.springpractice2.repository.BoardRepository;
+import com.sparta.springpractice2.repository.CommentLikeRepository;
 import com.sparta.springpractice2.repository.CommentRepository;
-import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class CommentService {
     private final CommentRepository commentRepository;
-    private final JwtUtil jwtUtil;
-    private final MemberService memberService;
-    private final BoardService boardService;
+    private final CommentLikeRepository commentLikeRepository;
+    private final BoardRepository boardRepository;
 
     @Transactional
-    public CommentResponseDto writeComment(Long boardId, CommentRequestDto commentRequestDto, HttpServletRequest request) {
-        Claims claims = jwtUtil.validToken(request);
-        Board board = boardService.getBoard(boardId);
-        Member member = memberService.getMember(claims);
+    public CommentResponseDto writeComment(Long boardId, CommentRequestDto commentRequestDto, Member member) {
+        Board board = boardRepository.findById(boardId).orElseThrow(
+                () -> new IllegalArgumentException("해당 게시글이 존재하지 않습니다.")
+        );
 
         Comment comment = commentRepository.save(new Comment(board, commentRequestDto, member));
         board.addComment(comment);
@@ -35,9 +31,20 @@ public class CommentService {
     }
 
     @Transactional
-    public CommentResponseDto updateComment(Long commentId, CommentRequestDto commentRequestDto, HttpServletRequest request) {
-        Claims claims = jwtUtil.validToken(request);
-        Member member = memberService.getMember(claims);
+    public String updateLikeComment(Long commentId, Member member) {
+        Comment comment = getComment(commentId);
+        Optional<CommentLike> commentLike = commentLikeRepository.findCommentLikeByMemberAndComment(member, comment);
+
+        if (commentLike.isPresent()) {
+            comment.removeLike(commentLike.get());
+            return "좋아요 취소";
+        }
+        comment.addLike(new CommentLike(member, comment));
+        return "좋아요";
+    }
+
+    @Transactional
+    public CommentResponseDto updateComment(Long commentId, CommentRequestDto commentRequestDto, Member member) {
         Comment comment = getComment(commentId);
         confirm(member, comment);
 
@@ -46,21 +53,20 @@ public class CommentService {
     }
 
     @Transactional
-    public String deleteComment(Long commentId, HttpServletRequest request) {
-        Claims claims = jwtUtil.validToken(request);
-        Member member = memberService.getMember(claims);
+    public String deleteComment(Long commentId, Member member) {
         Comment comment = getComment(commentId);
         confirm(member, comment);
 
+        commentLikeRepository.deleteByComment(comment);
         commentRepository.delete(comment);
         return "삭제 완료.";
     }
 
     private void confirm(Member member, Comment comment) {
-        if(member.getRole() == MemberEnum.ADMIN || member == comment.getMember()){
+        if (member.getRole() == MemberEnum.ADMIN || member.getUsername().equals(comment.getMember().getUsername())) {
             return;
         }
-        throw new IllegalArgumentException("삭제 권한이 없습니다.");
+        throw new IllegalArgumentException("해당 댓글은 회원님의 댓글이 아닙니다.");
     }
 
     private Comment getComment(Long commentId) {
@@ -69,4 +75,5 @@ public class CommentService {
         );
         return comment;
     }
+
 }

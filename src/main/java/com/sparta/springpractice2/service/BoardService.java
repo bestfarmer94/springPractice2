@@ -3,25 +3,26 @@ package com.sparta.springpractice2.service;
 import com.sparta.springpractice2.dto.BoardRequestDto;
 import com.sparta.springpractice2.dto.BoardResponseDto;
 import com.sparta.springpractice2.entity.Board;
+import com.sparta.springpractice2.entity.BoardLike;
 import com.sparta.springpractice2.entity.Member;
 import com.sparta.springpractice2.entity.MemberEnum;
-import com.sparta.springpractice2.jwt.JwtUtil;
+import com.sparta.springpractice2.repository.BoardLikeRepository;
 import com.sparta.springpractice2.repository.BoardRepository;
-import io.jsonwebtoken.Claims;
+import com.sparta.springpractice2.repository.CommentLikeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class BoardService {
     private final BoardRepository boardRepository;
-    private final JwtUtil jwtUtil;
-    private final MemberService memberService;
+    private final BoardLikeRepository boardLikeRepository;
+    private final CommentLikeRepository commentLikeRepository;
 
     @Transactional(readOnly = true)
     public List<BoardResponseDto> listAll() {
@@ -35,10 +36,7 @@ public class BoardService {
     }
 
     @Transactional
-    public BoardResponseDto writeBoard(BoardRequestDto boardRequestDto, HttpServletRequest request) {
-        Claims claims = jwtUtil.validToken(request);
-        Member member = memberService.getMember(claims);
-
+    public BoardResponseDto writeBoard(BoardRequestDto boardRequestDto, Member member) {
         Board board = boardRepository.save(new Board(boardRequestDto, member));
         return new BoardResponseDto(board);
     }
@@ -50,9 +48,7 @@ public class BoardService {
     }
 
     @Transactional
-    public BoardResponseDto updateBoard(Long boardId, BoardRequestDto boardRequestDto, HttpServletRequest request) {
-        Claims claims = jwtUtil.validToken(request);
-        Member member = memberService.getMember(claims);
+    public BoardResponseDto updateBoard(Long boardId, BoardRequestDto boardRequestDto, Member member) {
         Board board = getBoard(boardId);
         confirmId(member, board);
 
@@ -61,14 +57,30 @@ public class BoardService {
     }
 
     @Transactional
-    public String deleteBoard(Long boardId, HttpServletRequest request) {
-        Claims claims = jwtUtil.validToken(request);
-        Member member = memberService.getMember(claims);
+    public String deleteBoard(Long boardId, Member member) {
         Board board = getBoard(boardId);
         confirmId(member, board);
 
+        boardLikeRepository.deleteByBoard(board);
         boardRepository.delete(board);
         return "삭제 성공";
+    }
+
+    @Transactional
+    public String updateLikeBoard(Long boardId, Member member) {
+        Board board = getBoard(boardId);
+        confirmId(member, board);
+
+        Optional<BoardLike> boardLike = boardLikeRepository.findBoardLikeByMemberAndBoard(member, board);
+        board.updateLike(boardLike.isPresent());
+
+        if (boardLike.isPresent()) {
+            boardLikeRepository.delete(boardLike.get());
+            return "좋아요 취소";
+        }
+
+        boardLikeRepository.save(new BoardLike(member, board));
+        return "좋아요";
     }
 
     public Board getBoard(Long id) {

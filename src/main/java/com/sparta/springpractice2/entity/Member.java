@@ -19,9 +19,9 @@ public class Member {
     @Enumerated(EnumType.STRING)
     private MemberEnum role;
 
-    public Member(MemberRequestDto memberRequestDto){
-        this.username = memberRequestDto.getUsername();
-        this.password = memberRequestDto.getPassword();
-        this.role = memberRequestDto.getRole();
+    public Member(String username,  String password, MemberEnum role){
+        this.username = username;
+        this.password = password;
+        this.role = role;
     }
 }

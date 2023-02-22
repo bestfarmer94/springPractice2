@@ -2,14 +2,15 @@ package com.sparta.springpractice2.controller;
 
 import com.sparta.springpractice2.dto.BoardRequestDto;
 import com.sparta.springpractice2.dto.BoardResponseDto;
+import com.sparta.springpractice2.security.UserDetailsImpl;
 import com.sparta.springpractice2.service.BoardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.List;
 
@@ -29,12 +30,12 @@ public class BoardController {
     public ResponseEntity writeBoard(
             @Valid @RequestBody BoardRequestDto boardRequestDto,
             BindingResult bindingResult,
-            HttpServletRequest httpServletRequest) {
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
 
         if (bindingResult.hasErrors()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(bindingResult.getAllErrors());
         }
-        return ResponseEntity.ok(boardService.writeBoard(boardRequestDto, httpServletRequest));
+        return ResponseEntity.ok(boardService.writeBoard(boardRequestDto, userDetails.getMember()));
     }
 
     @GetMapping("/board/{boardId}")
@@ -42,17 +43,25 @@ public class BoardController {
         return boardService.selectBoard(boardId);
     }
 
+    @PostMapping("/board/like/{boardId}")
+    public String updateLikeBoard(@PathVariable Long boardId, @AuthenticationPrincipal UserDetailsImpl userDetails){
+        return boardService.updateLikeBoard(boardId, userDetails.getMember());
+    }
+
     @PutMapping("/board/{boardId}")
     public BoardResponseDto updateBoard(
             @PathVariable Long boardId,
             @RequestBody BoardRequestDto boardRequestDto,
-            HttpServletRequest httpServletRequest) {
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
 
-        return boardService.updateBoard(boardId, boardRequestDto, httpServletRequest);
+        return boardService.updateBoard(boardId, boardRequestDto, userDetails.getMember());
     }
 
+
+
     @DeleteMapping("/board/{boardId}")
-    public String deleteBoard(@PathVariable Long boardId, HttpServletRequest httpServletRequest) {
-        return boardService.deleteBoard(boardId, httpServletRequest);
+    public String deleteBoard(@PathVariable Long boardId, @AuthenticationPrincipal UserDetailsImpl userDetails) {
+
+        return boardService.deleteBoard(boardId, userDetails.getMember());
     }
 }

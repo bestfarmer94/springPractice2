@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -20,8 +22,12 @@ public class Comment extends Timestamped {
     private Member member;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "BOARD_ID", nullable = false)
+    @JoinColumn(name = "BOARD_ID")
     private Board board;
+
+    @OneToMany(mappedBy = "comment", cascade = CascadeType.REMOVE)
+    List<CommentLike> commentLikeList = new ArrayList<>();
+//    private int likes;
 
     public Comment(Board board, CommentRequestDto commentRequestDto, Member member) {
         this.content = commentRequestDto.getContent();
@@ -32,4 +38,16 @@ public class Comment extends Timestamped {
     public void update(CommentRequestDto commentRequestDto) {
         this.content = commentRequestDto.getContent();
     }
+
+    public void removeLike(CommentLike commentLike) {
+        commentLikeList.remove(commentLike);
+    }
+
+    public void addLike(CommentLike commentLike) {
+        commentLikeList.add(commentLike);
+    }
+//    public void updateLike(boolean exists){
+//        int addLike = exists? -1 : 1;
+//        likes += addLike;
+//    }
 }
